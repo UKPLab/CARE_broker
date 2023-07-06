@@ -3,3 +3,6 @@ services:
   redis:
     ports:
       - ${REDIS_PORT}:6379
+  arangodb:
+    ports:
+      - ${ARANGODB_PORT}:8529

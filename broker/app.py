@@ -8,17 +8,20 @@ celery + socketio can work together.
 
 Author: Nils Dycke, Dennis Zyska
 """
-import sys
 
 from eventlet import monkey_patch  # mandatory! leave at the very top
 
 monkey_patch()
 
+import sys
 from flask import Flask, session, request
-from flask_socketio import SocketIO, join_room
+from flask_socketio import SocketIO
 from broker.config.WebConfiguration import instance as WebInstance
-from broker.db.Registry import Registry
-from broker.sockets.RegisterRoute import RegisterRoute
+from broker.db.Clients import Clients
+from broker.db.Tasks import Tasks
+from broker.db.Skills import Skills
+from broker.sockets.Register import Register
+from arango import ArangoClient
 import os
 from broker import init_logging
 
@@ -39,6 +42,16 @@ def init():
     DEBUG_MODE = "--debug" in sys.argv
     config = WebInstance(dev=DEV_MODE, debug=DEBUG_MODE)
 
+    # arango db
+    logger.info("Connecting to db...")
+    db_client = ArangoClient(
+        hosts="http://{}:{}".format(os.getenv("ARANGODB_HOST", "localhost"), os.getenv("ARANGODB_PORT", "8529")))
+    sys_db = db_client.db('_system', username='root', password=os.getenv("ARANGODB_ROOT_PASSWORD", "root"))
+    if not sys_db.has_database('broker'):
+        sys_db.create_database('broker')
+    sync_db = db_client.db('broker', username='root', password=os.getenv("ARANGODB_ROOT_PASSWORD", "root"))
+    db = sync_db.begin_async_execution(return_result=True)
+
     logger.info("Initializing server...")
     # flask server
     app = Flask("broker")
@@ -47,13 +60,16 @@ def init():
     app.config.update(config.session)
     socketio = SocketIO(app, **config.socketio, logger=logger, engineio_logger=logger)
 
-    # connect to registry
-    registry = Registry(os.getenv("REDIS_HOST"), os.getenv("REDIS_PORT"))
-    registry.connect()
-    registry.clean()
+    # clients
+    logger.info("Initializing db tables...")
+    db.clear_async_jobs()
+    clients = Clients(db, socketio)
+    tasks = Tasks(db, socketio)
+    skills = Skills(db, socketio)
 
     # add socket routes
-    routes = RegisterRoute("register", socketio, registry)
+    logger.info("Initializing socket routes...")
+    routes = Register(socketio=socketio, tasks=tasks, skills=skills, clients=clients)
 
     # socketio
     @socketio.on("connect")
@@ -64,21 +80,17 @@ def init():
 
         :return: the sid of the connection
         """
-        if data is None:
-            raise ConnectionRefusedError('Authentication data required on connect!')
         logger.debug(data)
 
-        # check simple authentication
-        if "token" in data and os.getenv("BROKER_TOKEN", "this_is_a_random_token_to_verify") != data["token"]:
-            raise ConnectionRefusedError('Authentication failed: Token invalid!')
+        clients.connect(sid=request.sid, ip=request.remote_addr, data=data)
+        session["sid"] = request.sid
 
-        sid = request.sid
-        session["sid"] = sid
-        join_room(sid)
+        # send available skills
+        skills.send_update(to=request.sid)
 
-        logger.debug(f"New socket connection established with sid: {sid} and ip: {request.remote_addr}")
+        logger.debug(f"New socket connection established with sid: {request.sid} and ip: {request.remote_addr}")
 
-        return sid
+        return request.sid
 
     @socketio.on("disconnect")
     def disconnect():
@@ -87,21 +99,23 @@ def init():
 
         :return: void
         """
+        # todo
+        # terminate running jobs
+        # clear pending results
 
         # close connection
-        sid = request.sid
-        socketio.close_room(sid)
-        # delete quota for sid
-        routes.quota.delete(sid)
-        routes.quota_results.delete(sid)
+        clients.disconnect(sid=request.sid)
 
-        # Removes owner on skill disconnection and inform other nodes
-        a = registry.remove_owner(sid)
-        if a is not None:
-            skill = registry.get_skill(a['skill']['name'], with_config=False)
-            socketio.emit("skillUpdate", [skill], broadcast=True, include_self=False)
+        # remove skills by sid if exists
+        skills.unregister(sid=request.sid)
 
-        logger.debug(f"Socket connection teared down for sid: {sid}")
+        # Terminate running jobs
+        # 1. Docker container disconnect
+        # TODO send task eventually to the next node if available
+        # 2. Client disconnect
+        # TODO send cancel request via socket io emit to container
+
+        logger.debug(f"Socket connection teared down for sid: {request.sid}")
 
     logger.info("App starting ...", config.app)
     socketio.run(app, **config.app, log_output=True)

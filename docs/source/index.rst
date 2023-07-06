@@ -22,6 +22,9 @@ The models should therefore connect to the NLP Broker independently when availab
 | NLP tools and models are registered as so called :doc:`Skills <./skills/definition>`, each having a specific task.
 | See :doc:`Quickstart <./getting_started/quickstart>` for a quick introduction to the NLP Broker.
 
+The broker is developed as part of the `CARE project <https://github.com/UKPLab/CARE>`_ at the `UKP Lab <https://www.informatik.tu-darmstadt.de/ukp/ukp_home/index.en.jsp>`_ at the `TU Darmstadt <https://www.tu-darmstadt.de/index.en.jsp>`_.
+
+
 .. toctree::
    :maxdepth: 1
    :caption: Getting Started
@@ -29,6 +32,7 @@ The models should therefore connect to the NLP Broker independently when availab
    getting_started/quickstart
    getting_started/installation
    getting_started/development
+   getting_started/db
 
 
 .. toctree::

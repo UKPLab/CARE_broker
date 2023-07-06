@@ -159,6 +159,7 @@ class TestBroker(unittest.TestCase):
         self._logger.info("Start client ...")
         ctx = mp.get_context('spawn')
 
+        # TODO assert check if guard is really running
         guard = Guard(os.getenv("TEST_URL"), os.getenv("TEST_TOKEN"))
         client = ctx.Process(target=guard.run,
                              args=())
@@ -277,10 +278,8 @@ class TestBroker(unittest.TestCase):
         Check if quota is working
         :return:
         """
-
-        end = time.perf_counter() + 0.5
         total_requests = 0
-        while time.perf_counter() < end:
+        for i in range(int(os.getenv("QUOTA_CLIENTS")) * 2):
             total_requests += 1
             self.client.put({'id': "quota", 'name': "test_skill",
                              'data': {'start': time.perf_counter(), 'request': total_requests}})
@@ -299,9 +298,9 @@ class TestBroker(unittest.TestCase):
 
         self._logger.info("Total requests sent: {}".format(total_requests))
         self._logger.info("Time between first and last received message: {}".format(last_message - first_message))
+        self._logger.info("Messages received: {}".format(messages))
         self.assertLess(len(messages), total_requests)
         self.assertEqual(int(os.getenv("QUOTA_CLIENTS")), len(messages))
-        self._logger.info("Messages received: {}".format(messages))
 
     def test_delay(self):
         """

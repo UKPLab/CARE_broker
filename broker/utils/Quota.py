@@ -25,7 +25,7 @@ class Quota:
             return True
         else:
             if append:
-                self.queues[sid].append(time.time())
+                self.queues[sid].append(time.perf_counter())
             return False
 
     def exceed(self, sid):
@@ -39,7 +39,7 @@ class Quota:
             self.queues[sid] = deque(maxlen=self.max_len)
 
         if len(self.queues[sid]) >= self.max_len:
-            elapsed_time = time.time() - self.queues[sid][0]
+            elapsed_time = time.perf_counter() - self.queues[sid][0]
             if elapsed_time >= 1:  # greater than 1 second
                 self.queues[sid].popleft()
                 return False
@@ -47,5 +47,16 @@ class Quota:
                 return True
 
     def delete(self, sid):
+        """
+        Delete the quota for a specific sid
+        :param sid: session id
+        :return:
+        """
         if sid in self.queues:
             del self.queues[sid]
+
+    def reset(self):
+        """
+        Reset the quota
+        """
+        self.queues = {}

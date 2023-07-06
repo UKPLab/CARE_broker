@@ -27,7 +27,7 @@ guard:
 
 .PHONY: docker
 docker:
-	docker-compose -f docker-compose.yml -f docker-dev.yml up redis
+	docker-compose -f docker-compose.yml -f docker-dev.yml up arangodb
 
 .PHONY: dev
 dev:
@@ -40,7 +40,6 @@ test:
 .PHONY: stress
 stress:
 	export PYTHONPATH="${PYTHONPATH}:${CURDIR}" && python3 -u -m unittest test.test_broker.TestBroker.stressTest
-
 
 .PHONY: test-build
 test-build:

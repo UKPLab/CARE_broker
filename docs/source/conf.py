@@ -24,7 +24,7 @@ extensions = [
     'sphinx.ext.autosummary',  # Create neat summary tables for modules/classes/methods etc.
     'sphinx.ext.intersphinx',  # Link to other projects' documentation.
     'sphinx.ext.viewcode',  # Add a link to the Python source code of documented object.
-    'sphinx.ext.todo',  # Support for open to do items.
+    'sphinx.ext.todo',  # Support for todo items.
 ]
 autosummary_generate = True  # Turn on sphinx.ext.autosummary
 
