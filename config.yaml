@@ -1,0 +1,24 @@
+quota:
+  guest:
+    jobs: 25
+    requests: 50
+    results: 100
+  user:
+    jobs: 50
+    requests: 100
+    results: 1000
+  admin:
+    jobs: 0
+    requests: 0
+    results: 0
+quotaInterval: 1
+scrub:
+  enabled: true
+  interval: 60
+  maxAge: 0
+taskKiller:
+  enabled: true
+  interval: 1
+  maxDuration: 600
+cleanDbOnStart: true
+

@@ -1,33 +1,47 @@
-""" app -- Bootstrapping the server
+"""
+Broker entry point for bootstrapping the server
 
-This is the file used to start the flask (and socketio) server. It is also the file considered
-by the celery client to setup RPCs to the celery server.
-
-At the moment, the file contains examples to test your setup and get a feeling for how
-celery + socketio can work together.
-
-Author: Nils Dycke, Dennis Zyska
+This is the file used to start the flask (and socketio) server.
 """
 
 from eventlet import monkey_patch  # mandatory! leave at the very top
 
 monkey_patch()
 
-import sys
 from flask import Flask, session, request
 from flask_socketio import SocketIO
-from broker.config.WebConfiguration import instance as WebInstance
-from broker.db.Clients import Clients
-from broker.db.Tasks import Tasks
-from broker.db.Skills import Skills
-from broker.sockets.Register import Register
-from arango import ArangoClient
-import os
-from broker import init_logging
 
-__version__ = os.getenv("BROKER_VERSION")
+from broker.sockets.Request import Request
+from broker.sockets.Skill import Skill
+
+from broker.sockets.Auth import Auth
+import os
+from broker import init_logging, load_config, load_env
+from broker.db import connect_db
+import random
+import string
+import redis
+import argparse
+
 __author__ = "Dennis Zyska, Nils Dycke"
 __credits__ = ["Dennis Zyska", "Nils Dycke"]
+
+
+def parser():
+    """
+    Parser for the CLI
+    :return:
+    """
+    arg_parser = argparse.ArgumentParser(description='Broker Server')
+    arg_parser.add_argument('--env', help="Environment file to load (Default using ENV)", type=str, default="")
+    sub_parser = arg_parser.add_subparsers(dest='broker_command', help="Commands for broker")
+    sub_parser.add_parser('scrub', help="Only run scrub job")
+    sub_parser.add_parser('init', help="Init the broker")
+
+    a_parser = sub_parser.add_parser('assign', help="Assign a role to a user")
+    a_parser.add_argument('--role', help="Assign role to user (Default: admin)", type=str, default='admin')
+    a_parser.add_argument('--key', help="Public key of user for assigning a role", type=str, default=None)
+    return arg_parser, a_parser
 
 
 def init():
@@ -37,39 +51,31 @@ def init():
     """
     logger = init_logging("broker")
 
-    # check if dev mode
-    DEV_MODE = "--dev" in sys.argv
-    DEBUG_MODE = "--debug" in sys.argv
-    config = WebInstance(dev=DEV_MODE, debug=DEBUG_MODE)
-
-    # arango db
-    logger.info("Connecting to db...")
-    db_client = ArangoClient(
-        hosts="http://{}:{}".format(os.getenv("ARANGODB_HOST", "localhost"), os.getenv("ARANGODB_PORT", "8529")))
-    sys_db = db_client.db('_system', username='root', password=os.getenv("ARANGODB_ROOT_PASSWORD", "root"))
-    if not sys_db.has_database('broker'):
-        sys_db.create_database('broker')
-    sync_db = db_client.db('broker', username='root', password=os.getenv("ARANGODB_ROOT_PASSWORD", "root"))
-    db = sync_db.begin_async_execution(return_result=True)
+    config = load_config()
 
     logger.info("Initializing server...")
     # flask server
     app = Flask("broker")
-    app.logger = logger
-    app.config.update(config.flask)
-    app.config.update(config.session)
-    socketio = SocketIO(app, **config.socketio, logger=logger, engineio_logger=logger)
+    app.config.update({
+        "SECRET_KEY": ''.join(random.choice(string.printable) for i in range(8)),
+        "SESSION_TYPE": "redis",
+        "SESSION_PERMANENT": False,
+        "SESSION_USE_SIGNER": True,
+        "SESSION_REDIS": redis.from_url("redis://{}:{}".format(os.getenv("REDIS_HOST"), os.getenv("REDIS_PORT")), )
+    })
+    socketio = SocketIO(app, cors_allowed_origins='*', logger=logger, engineio_logger=logger)
 
-    # clients
-    logger.info("Initializing db tables...")
-    db.clear_async_jobs()
-    clients = Clients(db, socketio)
-    tasks = Tasks(db, socketio)
-    skills = Skills(db, socketio)
+    # get db and collection
+    logger.info("Connecting to db...")
+    db = connect_db(config, socketio)
 
     # add socket routes
-    logger.info("Initializing socket routes...")
-    routes = Register(socketio=socketio, tasks=tasks, skills=skills, clients=clients)
+    logger.info("Initializing socket...")
+    sockets = {
+        "request": Request(db=db, socketio=socketio),
+        "auth": Auth(db=db, socketio=socketio),
+        "skill": Skill(db=db, socketio=socketio)
+    }
 
     # socketio
     @socketio.on("connect")
@@ -80,13 +86,8 @@ def init():
 
         :return: the sid of the connection
         """
-        logger.debug(data)
-
-        clients.connect(sid=request.sid, ip=request.remote_addr, data=data)
+        db.clients.connect(sid=request.sid, ip=request.remote_addr, data=data)
         session["sid"] = request.sid
-
-        # send available skills
-        skills.send_update(to=request.sid)
 
         logger.debug(f"New socket connection established with sid: {request.sid} and ip: {request.remote_addr}")
 
@@ -99,27 +100,53 @@ def init():
 
         :return: void
         """
-        # todo
-        # terminate running jobs
-        # clear pending results
-
-        # close connection
-        clients.disconnect(sid=request.sid)
-
-        # remove skills by sid if exists
-        skills.unregister(sid=request.sid)
-
-        # Terminate running jobs
-        # 1. Docker container disconnect
-        # TODO send task eventually to the next node if available
-        # 2. Client disconnect
-        # TODO send cancel request via socket io emit to container
+        db.clients.disconnect(sid=request.sid)
 
         logger.debug(f"Socket connection teared down for sid: {request.sid}")
 
-    logger.info("App starting ...", config.app)
-    socketio.run(app, **config.app, log_output=True)
+    app_config = {
+        "debug": os.getenv("FLASK_DEBUG", False),
+        "host": "0.0.0.0",
+        "port": os.getenv("BROKER_PORT", 4852)
+    }
+    logger.info("App starting ...", app_config)
+    socketio.run(app, **app_config, log_output=True)
 
 
 if __name__ == '__main__':
-    init()
+    logger = init_logging("main")
+
+    # argument parser
+    parser, assign_parser = parser()
+    args = parser.parse_args()
+
+    # load env
+    load_env(args.env)
+
+    if args.broker_command == 'scrub':
+        from broker.utils import scrub_job
+
+        scrub_job()
+    elif args.broker_command == 'init':
+        from broker.utils import init_job, check_key
+
+        check_key(create=True)
+        init_job()
+    elif args.broker_command == 'assign':
+        if args.key is None or args.role is None:
+            assign_parser.print_help()
+            exit()
+
+        config = load_config()
+        config['cleanDbOnStart'] = False
+        config['scrub']['enabled'] = False
+        config['taskKiller']['enabled'] = False
+        db = connect_db(config, None)
+
+        user = db.users.set_role(args.key, args.role)
+        if user:
+            logger.info("Role assigned to user, db entry: {}".format(user['_key']))
+        else:
+            logger.error("User not found in db, please check the public key")
+    else:
+        init()

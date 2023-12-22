@@ -1,33 +1,24 @@
-FROM continuumio/miniconda3
+FROM python:3.10.8-slim-bullseye
 ARG ENV
 ENV ENV=$ENV
+
+# echo build type
+RUN echo "ENV=$ENV"
 
 # COPY SERVER CODE
 WORKDIR /
 ADD . /broker
 WORKDIR broker
 
-# Install debian mirror
-RUN echo "deb http://debian.tu-bs.de/debian/ bullseye-updates main" >> /etc/apt/sources.list
-RUN echo "deb-src http://debian.tu-bs.de/debian/ bullseye-updates main" >> /etc/apt/sources.list
-RUN echo "deb http://debian.tu-bs.de/debian/ bullseye main" >> /etc/apt/sources.list
-RUN echo "deb-src http://debian.tu-bs.de/debian/ bullseye main" >> /etc/apt/sources.list
-RUN cat /etc/apt/sources.list
+# INSTALL Requirements
+RUN pip install --upgrade pip
+RUN pip install -r requirements.txt
 
-# Install make
-RUN apt update && apt install make -y
+# Generate private key if not exists
+RUN if [ ! -f /broker/private_key.pem ]; then \
+    openssl genrsa -out /broker/private_key.pem 2048; fi
 
-RUN set -x && \
-    conda install -n base -c defaults conda=4.* && \
-    conda env create -f environment.yaml # Installs environment.yml && \
-    conda clean -a \
+# Add current dir to python path
+ENV PYTHONPATH="${PYTHONPATH}:/broker"
 
-SHELL ["conda", "run", "-n", "nlp_api", "/bin/bash", "-c"]
-RUN conda init bash
-
-ENV PATH /opt/conda/envs/condaenv/bin:$PATH
-# echo build type
-RUN echo $ENV
-
-CMD ["conda", "run", "-n", "nlp_api", "make", "broker"]
-
+CMD ["python3", "broker/app.py"]

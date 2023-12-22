@@ -4,10 +4,6 @@ Providing Models
 The example to provide a model is based on the `Huggingface Pipeline API <https://huggingface.co/docs/transformers/main_classes/pipelines>`_.
 We recommend to use a docker environment to run the model inside a container.
 
-.. note::
-
-    | The full working example can be found on `GitHub <https://github.com/UKPLab/CARE_models>`_.
-
 Since neural models are mostly trained with Python, this sample also use Python as the programming language.
 
 .. code-block::

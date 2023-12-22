@@ -1,0 +1,31 @@
+name: question_answering
+description: Classifiy the tokens in a text
+pipeline:
+  task: question-answering
+  model: deepset/roberta-base-squad2
+input:
+  data:
+    question:
+      type: string
+      required: true
+      description: The question to answer
+    context:
+      type: string
+      required: true
+      description: The context to answer the question
+  example: {'question':"Where do I live?", 'context':"My name is Wolfgang and I live in Berlin"}
+output:
+  data:
+    score:
+      type: float
+      description: The score of the answer
+    answer:
+      type: string
+      description: Answer
+    start:
+      type: integer
+      description: Start index of the entity group
+    end:
+      type: integer
+      description: End index of the entity group
+  example: {'score': 0.9191, 'start': 34, 'end': 40, 'answer': 'Berlin'}

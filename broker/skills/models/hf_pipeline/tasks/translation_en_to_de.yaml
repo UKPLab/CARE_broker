@@ -1,0 +1,17 @@
+name: translation
+description: Translate a text from english to german
+pipeline:
+  task: translation_en_to_de
+input:
+  data:
+    text:
+      type: string
+      required: true
+      description: Text to translate
+  example: {text: "This is a test!"}
+output:
+  data:
+    translation_text:
+      type: string
+      description: Translated text
+  example: {"translation_text": "Dies ist ein Test!"}

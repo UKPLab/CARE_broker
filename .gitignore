@@ -1,7 +1,11 @@
 
+build
+
 # nlp
 broker/__pycache__
 broker/**/__pycache__
+
+examples/private_key.pem
 
 # docs
 docs/build
@@ -9,3 +13,5 @@ docs/html
 
 # test
 test/results.jsonl
+
+private_key.pem

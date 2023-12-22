@@ -1,14 +1,13 @@
 asyncapi: 2.5.0
 info:
-    title: Broker API
-    version: 0.2.0
-    description: |
-        This is the documentation of the asynchronous communication for the Broker API. It is possible to publish skills to the broker and send task to the skills.
+  title: Broker API
+  version: 0.3.0
+  description: |
+    This is the documentation of the asynchronous communication for the Broker API. It is possible to publish skills to the broker and send task to the skills.
 servers:
-    broker:
-        url: http://localhost:4853
-        protocol: wss
-
+  broker:
+    url: http://localhost:4853
+    protocol: wss
 channels:
   /:
     publish:
@@ -19,7 +18,8 @@ channels:
           - $ref: "#/components/messages/skillRequest"
           - $ref: "#/components/messages/skillGetConfig"
           - $ref: "#/components/messages/taskResults"
-          - $ref: "#/components/messages/requestError"
+          - $ref: "#/components/messages/taskAbort"
+          - $ref: "#/components/messages/error"
     subscribe:
       message:
         oneOf:
@@ -27,9 +27,25 @@ channels:
           - $ref: "#/components/messages/skillConfig"
           - $ref: "#/components/messages/skillResults"
           - $ref: "#/components/messages/taskRequest"
-
+          - $ref: "#/components/messages/taskKill"
 components:
   messages:
+    error:
+      name: Error
+      title: Error in a request
+      summary: Error in a request
+      payload:
+        type: object
+        properties:
+          code:
+            type: integer
+            description: Error code (see documentation)
+          message:
+            type: string
+            description: Error message
+          error:
+            type: object
+            description: Error data
     skillRegister:
       name: skillRegister
       title: Register a skill
@@ -91,19 +107,6 @@ components:
             type: object
             description: Input for the skill defined in the Skill Definition File (SDF)
             $ref: "#/components/schemas/SDFInput"
-    requestError:
-      name: requestError
-      title: Error in a request
-      summary: Error in a request
-      payload:
-        type: object
-        properties:
-          id:
-            type: string
-            description: ID of the skill to be executed
-          message:
-            type: string
-            description: Error message
     skillResults:
       name: skillResults
       title: Answer a skill request
@@ -128,9 +131,9 @@ components:
           id:
             type: string
             description: unique ID of the skill
-          status:
-            type: string
-            description: Status of the skill
+          nodes:
+            type: integer
+            description: Number of available nodes
           config:
             type: object
             description: Skill Definition File (SDF)
@@ -157,8 +160,41 @@ components:
           id:
             type: number
             description: ID of the task to be executed
+          error:
+            type: object
+            description: If an error occurred, this object contains the error data
+            properties:
+              code:
+                type: integer
+                description: Error code (see documentation)
+              message:
+                type: string
+                description: Error message
+              error:
+                type: object
+                description: Error data
           data:
             $ref: "#/components/schemas/SDFOutput"
+    taskAbort:
+      name: taskAbort
+      title: Abort a task
+      summary: Abort a task
+      payload:
+        type: object
+        properties:
+          id:
+            type: number
+            description: ID of the task to be executed
+    taskKill:
+      name: taskKill
+      title: Kill a task
+      summary: Kill a task
+      payload:
+        type: object
+        properties:
+          id:
+            type: number
+            description: ID of the task to be executed
   schemas:
     SDFInput:
       type: object
@@ -192,7 +228,7 @@ components:
         needs:
           type: array
           description: Array of pre executed skills before sending it to the current task
-          default: []
+          default: [ ]
         config:
           type: object
           description: Configuration that can be set by the user

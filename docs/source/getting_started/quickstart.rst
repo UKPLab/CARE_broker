@@ -1,26 +1,21 @@
 Quickstart Guide
 =================
 
-This guide will help you get started with the NLP Broker.
+This guide will help you get started with the Broker.
 
-| You can either install the NLP Broker on your local machine or use the NLP Broker as a service.
-| For a local installation, please follow the instructions in :doc:`Installation <./installation>`.
-| If you want to use the NLP Broker as a service, you can connect the API through:
-
-- |BROKER_WEBURL|
+| You can either install the Broker on your local machine or use the Broker as a service.
+| For a complete installation, please follow the instructions in :doc:`Installation <./installation>`.
 
 .. note::
 
-    Please be aware that the NLP Broker is a websocket API based on `Socket.IO <https://socket.io/>`_ and therefore requires a websocket client to connect to it.
+    Please be aware that the Broker is a websocket API based on `Socket.IO <https://socket.io/>`_ and therefore requires a websocket client to connect to it.
     The API is not accessible through a RESTful interface!
 
-    | The full documentation of the API can be found under:
-    | |BROKER_APIURL|
 
 Sequence Diagram
 ----------------
 
-To give you a better understanding of the communication between the Broker, Containers and Clients, we provide a sequence diagram of the communication:
+To give you a better understanding of the communication between the Broker, Skills and Clients, we provide a sequence diagram of the communication:
 
 .. image:: ./sequence.drawio.svg
    :width: 80%
@@ -72,5 +67,15 @@ Here we provide some basic example for the Javascript API:
 
 To execute a skill just call:
 
-:javascript:`socket.emit("skillRequest", {id: "<unique id>", name: "<skill name>", data: "<skill data>"});`
+.. code-block:: javascript
 
+    socket.emit("skillRequest", {id: "<unique id>", name: "<skill name>", data: "<skill data>", config: {donate: true}});
+
+
+.. note::
+
+    For authentication see :doc:`Authentication <../broker/authentication>`.
+
+.. tip::
+
+    Further examples (jupyter notebooks) can be found in the ``examples`` folder.

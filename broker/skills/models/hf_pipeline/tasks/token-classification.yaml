@@ -1,0 +1,34 @@
+name: token_classification
+description: Classifiy the tokens in a text
+pipeline:
+  task: token-classification
+  aggregation_strategy: simple
+  model: Jean-Baptiste/camembert-ner
+input:
+  data:
+    text:
+      type: string
+      required: true
+      description: The text to be classified
+  example: {text: "Je m'appelle jean-baptiste et je vis à montréal"}
+output:
+  data:
+    type: array
+    description: List of results
+    items:
+      score:
+        type: float
+        description: The score of the classification
+      entity_group:
+        type: string
+        description: Entity group
+      word:
+        type: string
+        description: Word of the entity group
+      start:
+        type: integer
+        description: Start index of the entity group
+      end:
+        type: integer
+        description: End index of the entity group
+  example: [{'entity_group': 'PER', 'score': 0.9931, 'word': 'jean-baptiste', 'start': 12, 'end': 26}, {'entity_group': 'LOC', 'score': 0.998, 'word': 'montréal', 'start': 38, 'end': 47}]

@@ -1,0 +1,26 @@
+name: text_generation
+description: Text generation
+pipeline:
+  task: text-generation
+  model: gpt2
+input:
+  data:
+    text:
+      type: string
+      required: true
+      description: The beginning of the text to be generated
+    do_sample:
+      type: boolean
+      required: false
+      default: false
+      description: Whether or not to use sampling ; use greedy decoding otherwise.
+  example: {"I can't believe you did such a ", do_sample=False}
+output:
+  data:
+    type: array
+    description: List of results
+    items:
+      generated_text:
+        type: string
+        description: Generated text
+  example: [{'generated_text': "I can't believe you did such a icky thing to me. I'm so sorry. I'm so sorry. I'm so sorry. I'm so sorry. I'm so sorry. I'm so sorry. I'm so sorry. I"}]

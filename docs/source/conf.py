@@ -11,8 +11,8 @@ sys.path.insert(0, os.path.abspath('../..'))
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = 'NLP API'
-copyright = '2022, Dennis Zyska, Nils Dycke'
+project = 'Broker'
+copyright = '2022-2023, Dennis Zyska, Nils Dycke'
 author = 'Dennis Zyska, Nils Dycke'
 
 # -- General configuration ---------------------------------------------------
@@ -24,7 +24,7 @@ extensions = [
     'sphinx.ext.autosummary',  # Create neat summary tables for modules/classes/methods etc.
     'sphinx.ext.intersphinx',  # Link to other projects' documentation.
     'sphinx.ext.viewcode',  # Add a link to the Python source code of documented object.
-    'sphinx.ext.todo',  # Support for todo items.
+    'sphinx.ext.todo',  # Support for to do items.
 ]
 autosummary_generate = True  # Turn on sphinx.ext.autosummary
 
@@ -46,13 +46,3 @@ exclude_patterns = []
 
 html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
-
-# Replacements
-
-rst_epilog = """
-.. |BROKER_WEBURL| replace:: {weburl}:{port}
-.. |BROKER_APIURL| replace:: {apiurl}
-.. |BROKER_VERSION| replace:: {version}
-""".format(weburl=os.environ.get('BROKER_WEBURL'), port=os.environ.get('BROKER_PORT'),
-           apiurl="{}/doc_nlp_api/index.html".format(os.environ.get('BROKER_WEBURL')),
-           version=os.environ.get('VERSION'))

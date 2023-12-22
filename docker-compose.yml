@@ -11,47 +11,58 @@ services:
       - ./docs:/docs
     command: make html
   docs_asyncapi:
-    image: asyncapi/generator
+    image: asyncapi/generator:1.15.5
     volumes:
       - ./docs:/docs
       - ./docs/api.yml:/app/api.yml
       - ./docs/html:/app/output
     command: --force-write -o ./output api.yml @asyncapi/html-template
   broker_bash:
+    image: broker_image
     build:
       context: .
       dockerfile: Dockerfile
       args:
         ENV: ${ENV}
     command: bash
-    <<: &default
-      image: broker_image
   broker:
-    <<: *default
+    image: broker_image
     links:
       - redis
+      - arangodb
     depends_on:
       - redis
-    command: conda run -n nlp_api --no-capture-output make ENV=${ENV} broker
+      - arangodb
+      - broker_bash
+    command: python3 broker/app.py
+    expose:
+      - ${BROKER_PORT}
     ports:
       - ${BROKER_PORT}:${BROKER_PORT}
     restart: unless-stopped
   guard:
-    <<: *default
+    image: broker_image
     links:
       - broker
       - redis
     depends_on:
       - broker
       - redis
-    command: conda run -n nlp_api --no-capture-output make ENV=${ENV} guard
+      - broker_bash
+    command: python3 main.py
   redis:
     image: redis
     restart: unless-stopped
   arangodb:
-    image: arangodb/arangodb:3.10.5
+    image: arangodb/arangodb:3.10.9
+    expose:
+      - "8529"
     restart: unless-stopped
+    healthcheck:
+      test: arangosh --server.endpoint tcp://localhost:8529 | grep -q 'for a tutorial' || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 5
     environment:
       - ARANGO_ROOT_PASSWORD=${ARANGODB_ROOT_PASSWORD}
       - ARANGO_NO_AUTH=1
-      - ARANGODB_SOCKETIO_PORT=${ARANGODB_SOCKETIO_PORT}

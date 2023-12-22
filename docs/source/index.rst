@@ -1,26 +1,21 @@
-.. NLP API documentation master file, created by
-   sphinx-quickstart on Fri Dec  2 15:55:21 2022.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
-Welcome to NLP Broker's documentation!
+Welcome to the Broker's documentation!
 ======================================
 
-The NLP Broker should provide a simple interface to a variety of NLP tools and models.
-It is designed to be used by the NLP Broker API based on websockets to keep the inference times as low as possible.
+The Broker should provide a simple interface to a variety of tools and models.
+It is designed to be used by the Broker API based on websockets to keep the inference times as low as possible.
 
 The goal is to give as many clients as possible access to models at the same time.
-The models should therefore connect to the NLP Broker independently when available and be available from that point on.
+The models should therefore connect to the Broker independently when available and be available from that point on.
 
 .. note::
 
    It cannot be guaranteed that all models will be available at all times.
-   The NLP Broker does not start any models and if the models crash it is their responsibility to restart the model
-   and reconnect to the NLP Broker on their own.
-   We also implemented a quota system to prevent a single client from using all available resources (see .env file for quota definition).
+   The Broker does not start any models and if the models crash it is the responsibility of the models container
+   to restart the model and reconnect to the Broker on their own.
+   We also implemented a quota system to prevent a single client from using all available resources (see ::doc:`Config </broker/config>`).
 
-| NLP tools and models are registered as so called :doc:`Skills <./skills/definition>`, each having a specific task.
-| See :doc:`Quickstart <./getting_started/quickstart>` for a quick introduction to the NLP Broker.
+| Tools and models are registered as so called :doc:`Skills <./skills/definition>`, each having a specific task.
+| See :doc:`Quickstart <./getting_started/quickstart>` for a quick introduction to the Broker.
 
 The broker is developed as part of the `CARE project <https://github.com/UKPLab/CARE>`_ at the `UKP Lab <https://www.informatik.tu-darmstadt.de/ukp/ukp_home/index.en.jsp>`_ at the `TU Darmstadt <https://www.tu-darmstadt.de/index.en.jsp>`_.
 
@@ -31,8 +26,18 @@ The broker is developed as part of the `CARE project <https://github.com/UKPLab/
 
    getting_started/quickstart
    getting_started/installation
-   getting_started/development
-   getting_started/db
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Broker
+
+   broker/config
+   broker/authentication
+   broker/cli
+   broker/requests
+   broker/development
+   broker/db
+
 
 
 .. toctree::
@@ -40,7 +45,7 @@ The broker is developed as part of the `CARE project <https://github.com/UKPLab/
    :caption: Skills
 
    skills/definition
-   skills/configuration
+   skills/features
    skills/skill_definition_file
    skills/examples
 
@@ -49,5 +54,6 @@ The broker is developed as part of the `CARE project <https://github.com/UKPLab/
    :caption: Models
 
    models/example
+   models/models
 
 

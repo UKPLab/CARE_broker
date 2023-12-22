@@ -11,9 +11,9 @@ class Guard:
 
     @author: Dennis Zyska
     """
-    def __init__(self, url, token):
+
+    def __init__(self, url):
         self.url = url
-        self.token = token
         self.logger = init_logging("Guard", logging.DEBUG)
 
     def run(self):
@@ -22,7 +22,7 @@ class Guard:
         client_queue = mp.Manager().Queue(12)
         message_queue = mp.Manager().Queue(12)
         client = ctx.Process(target=simple_client, args=("Guard",
-                                                         self.url, self.token, client_queue, message_queue))
+                                                         self.url, client_queue, message_queue))
         client.start()
 
         while True:

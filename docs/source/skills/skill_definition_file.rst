@@ -75,7 +75,7 @@ The SDF template is a YAML file that contains the basic structure of an SDF file
 
     The SDF template is not a valid SDF file. It is only a template to show the structure of an SDF file.
 
-    Also, if the model need further configuration, of course the YAML can be extended.
+    Also, if the model need further configuration, the YAML can be extended.
 
 Types
 -----
@@ -150,6 +150,12 @@ The SDF template contains the following sections:
    - Input of the model, the input data is defined in the data section.
  * - output
    - Output of the model, the output data is defined in the data section.
+ * - roles
+   - | List of roles that are allowed to use this skill.
+     | If not set, all roles are allowed to use this skill. See :doc:`../broker/authentication` for more information.
+ * - features
+   - | List of features that is provided by this skill.
+     | See possible skill features :doc:`./features` for more information.
  * - needs
    - | List of task that should be handles by the broker before running the own task,
      | because we want not provide it by the own model. The order matters!
@@ -158,6 +164,6 @@ The SDF template contains the following sections:
 
 .. note::
 
-        If using the config section, the config data will be provided with each input separately during runtime.
+    If using the config section, the config data will be provided with each input separately during runtime.
 
-        Make sure the models can handle this very fast, otherwise is better to provide several models to reduce inference time!
+    Make sure the models can handle this very fast, otherwise is better to provide several models to reduce inference time!

@@ -1,0 +1,21 @@
+name: text2text
+description: Pipeline for text to text generation using seq2seq models.
+pipeline:
+  task: text2text
+  model: mrm8488/t5-base-finetuned-question-generation-ap
+input:
+  data:
+    text:
+      type: string
+      required: true
+      description: Text
+  example: {text: "answer: Manuel context: Manuel has created RuPERTa-base with the support of HF-Transformers and Google"}
+output:
+  data:
+    type: array
+    description: List of results
+    items:
+      generated_text:
+        type: string
+        description: Generated text
+  example: [{'generated_text': 'question: Who created the RuPERTa-base?'}]

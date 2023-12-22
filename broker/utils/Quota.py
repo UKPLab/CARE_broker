@@ -1,5 +1,6 @@
 import time
 from collections import deque
+import numpy as np
 
 
 class Quota:
@@ -9,54 +10,47 @@ class Quota:
     @author: Dennis Zyska
     """
 
-    def __init__(self, max_len=100):
+    def __init__(self, max_len=100, interval=1):
         self.max_len = max_len
-        self.queues = {}
+        self.queue = None
+        self.interval = interval
 
-    def __call__(self, sid, append=True):
+        if max_len > 0:
+            self.reset()
+
+    def __call__(self, append=True):
         """
         Check if the quota is exceeded for a specific sid
 
-        :param sid: session id from socket io
         :param append: add current time to queue if quota is not exceeded
         :return:
         """
-        if self.exceed(sid):
+        if self.queue is None:
+            return False
+
+        if self.exceed():
             return True
         else:
             if append:
-                self.queues[sid].append(time.perf_counter())
+                self.queue.append(time.perf_counter())
             return False
 
-    def exceed(self, sid):
+    def exceed(self):
         """
         Check if the quota is exceeded for a specific sid
 
-        :param sid: session id from socket io
         :return: True if quota is exceeded
         """
-        if sid not in self.queues:
-            self.queues[sid] = deque(maxlen=self.max_len)
-
-        if len(self.queues[sid]) >= self.max_len:
-            elapsed_time = time.perf_counter() - self.queues[sid][0]
-            if elapsed_time >= 1:  # greater than 1 second
-                self.queues[sid].popleft()
+        if len(self.queue) >= self.max_len:
+            elapsed_time = time.perf_counter() - self.queue[0]
+            if elapsed_time >= self.interval:
+                self.queue.popleft()
                 return False
             else:
                 return True
-
-    def delete(self, sid):
-        """
-        Delete the quota for a specific sid
-        :param sid: session id
-        :return:
-        """
-        if sid in self.queues:
-            del self.queues[sid]
 
     def reset(self):
         """
         Reset the quota
         """
-        self.queues = {}
+        self.queue = deque(maxlen=self.max_len)
